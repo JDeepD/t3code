@@ -1,4 +1,4 @@
-import type { ModelSelection, RuntimeMode, ScopedThreadRef } from "@t3tools/contracts";
+import type { ModelSelection, RuntimeMode, ScopedThreadRef, ThreadId } from "@t3tools/contracts";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { deriveThreadTitleSeed } from "@t3tools/client-runtime/operations";
 import {
@@ -20,8 +20,8 @@ import { useOrchestrationCommand } from "../../state/use-orchestration-command";
 /**
  * Starts side chats from `threadRef`, or offers none when it is null. `open` forks the
  * thread's latest stable point, sends `prompt` there with `readSettings()`, the parent
- * composer's settings, and shows the tab. It resolves false when the side chat did not
- * start, or another one is still starting.
+ * composer's settings, and shows the tab, resolving false if it did not start or another is
+ * starting. `openInBackground` skips the tab and resolves to the side chat's id, or null.
  */
 export function useSideChat(input: {
   readonly threadRef: ScopedThreadRef | null;
@@ -48,7 +48,11 @@ export function useSideChat(input: {
     const error = squashAtomCommandFailure(failure);
     input.onError(error instanceof Error ? error.message : fallback);
   };
-  const start = async (threadRef: ScopedThreadRef, prompt: string | undefined) => {
+  const start = async (
+    threadRef: ScopedThreadRef,
+    prompt: string | undefined,
+    reveal: boolean,
+  ): Promise<ThreadId | null> => {
     const { runtimeMode, modelSelection } = input.readSettings();
     const targetThreadId = newThreadId();
     const fork = await forkSideChat({
@@ -57,7 +61,7 @@ export function useSideChat(input: {
     });
     if (fork._tag === "Failure") {
       reportFailure(fork, "Could not start a side chat.");
-      return false;
+      return null;
     }
     // Drops the empty side chat a failed start leaves behind; one that got its message stays.
     const discard = () =>
@@ -69,13 +73,13 @@ export function useSideChat(input: {
     if (!(await waitForThreadShell(targetRef))) {
       input.onError("The side chat was created, but it did not reach this client.");
       discard();
-      return false;
+      return null;
     }
     const sideChat = readThreadShell(targetRef);
     if (sideChat === null) {
       input.onError("The side chat is no longer available.");
       discard();
-      return false;
+      return null;
     }
     if (runtimeMode !== sideChat.runtimeMode) {
       const mode = await setThreadRuntimeMode({
@@ -85,7 +89,7 @@ export function useSideChat(input: {
       if (mode._tag === "Failure") {
         reportFailure(mode, "Could not set the side chat's permission mode.");
         discard();
-        return false;
+        return null;
       }
     }
     const text = prompt?.trim();
@@ -106,21 +110,27 @@ export function useSideChat(input: {
       if (turn._tag === "Failure") {
         reportFailure(turn, "Could not send the side chat message.");
         discard();
-        return false;
+        return null;
       }
     } else if (modelSelection !== undefined) {
       useComposerDraftStore.getState().setModelSelection(targetRef, modelSelection);
     }
-    useRightPanelStore.getState().openSideChat(threadRef, targetThreadId);
-    return true;
+    if (reveal) useRightPanelStore.getState().openSideChat(threadRef, targetThreadId);
+    return targetThreadId;
   };
-  const open = async (prompt?: string) => {
+  const run = async (prompt: string | undefined, reveal: boolean) => {
     const { threadRef } = input;
-    if (!threadRef || pendingRef.current) return false;
+    if (!threadRef || pendingRef.current) return null;
     pendingRef.current = true;
-    return start(threadRef, prompt).finally(() => {
+    return start(threadRef, prompt, reveal).finally(() => {
       pendingRef.current = false;
     });
   };
-  return { available: input.threadRef !== null, open: useStableCallback(open) };
+  const open = async (prompt?: string) => (await run(prompt, true)) !== null;
+  const openInBackground = (prompt: string) => run(prompt, false);
+  return {
+    available: input.threadRef !== null,
+    open: useStableCallback(open),
+    openInBackground: useStableCallback(openInBackground),
+  };
 }
