@@ -42,6 +42,7 @@ import {
 import { resolveLauncherPath } from "./cloud/pinnedRuntime.ts";
 import { fixPath } from "./os-jank.ts";
 import * as ForkDatabase from "./fork/ForkDatabase.ts";
+import * as KnowledgeStore from "./knowledge/KnowledgeStore.ts";
 import * as MagicPromptStore from "./magicPrompts/MagicPromptStore.ts";
 import * as Ws from "./ws.ts";
 import * as AgentScopeLive from "./process/agentScope.ts";
@@ -842,6 +843,8 @@ const layerMakeRoutes = Layer.mergeAll(
   ),
   McpHttpServer.layer.pipe(
     Layer.provide(ProviderAdapterRegistry.layerFromProviderInstanceRegistry),
+    // Memoized with Ws.layer's, so the notes panel hears what agents save.
+    Layer.provide(KnowledgeStore.layer.pipe(Layer.provide(ForkDatabase.layer))),
     Layer.provide(McpOAuth.layerMcpClientAuthenticator),
   ),
   // Follows delegated tasks running in linked environments, including after a restart.

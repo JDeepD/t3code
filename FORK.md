@@ -146,11 +146,16 @@ Files:
   `AssistantSelectionToolbar.tsx`, `MessagesTimeline.tsx`, `timelineRowContext.ts`,
   `TimelineAssistantRows.tsx`
 
-Not built: agent tools for listing and adding notes and todos. They would need a toolkit under
-`apps/server/src/mcp/toolkits/`, registration and access modes in `McpHttpServer.ts` and
-`McpToolExposure.ts`, a setting to turn them on, and eval cases for the tool descriptions
-(`evals/README.md`). `KnowledgeStore.list` and `save` are the service methods they would call.
-Todo dependencies (`dependsOn`) are stored and validated but have no UI yet.
+Agents reach the panel through three T3 MCP tools: `t3_knowledge_list`, `t3_knowledge_save`
+(create or change a note, todo or plan) and `t3_knowledge_delete`. They default to the calling
+thread's project, and an item an agent creates links back to that thread. Ask in a chat, for
+example "add these as todos in my notes panel". Read-only MCP clients and linked environments
+can list but not change. Code: `apps/server/src/mcp/toolkits/knowledge/`. Hook-ins:
+`McpHttpServer.ts` (`layerTools`), `server.ts` (provides the store to `/mcp`) and
+`agentContextBudget.json`.
+
+Not built: a setting to hide these tools, and eval cases for their descriptions
+(`evals/README.md`). Todo dependencies (`dependsOn`) are stored and validated but have no UI yet.
 
 ### Magic prompts (web and desktop)
 
