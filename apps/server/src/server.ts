@@ -41,6 +41,8 @@ import {
 } from "./httpResponseErrorGuard.ts";
 import { resolveLauncherPath } from "./cloud/pinnedRuntime.ts";
 import { fixPath } from "./os-jank.ts";
+import * as ForkDatabase from "./fork/ForkDatabase.ts";
+import * as MagicPromptStore from "./magicPrompts/MagicPromptStore.ts";
 import * as Ws from "./ws.ts";
 import * as AgentScopeLive from "./process/agentScope.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
@@ -437,6 +439,7 @@ const layerPullRequestService = PullRequestService.layer.pipe(
 );
 
 const layerGitManager = GitManager.layer.pipe(
+  Layer.provide(MagicPromptStore.layer.pipe(Layer.provide(ForkDatabase.layer))),
   Layer.provide(Layer.merge(ProjectionStoreV2.layer, ProjectStore.layer)),
   Layer.provideMerge(RuntimeLayer.layerProjectSetupScriptRunner),
   Layer.provideMerge(WorktreeSetupTracker.layer),

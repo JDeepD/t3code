@@ -11,6 +11,7 @@ import { Input } from "../ui/input";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { filterKnowledge, type KnowledgeTab } from "./knowledge.logic";
 import { useKnowledgeCommands } from "./knowledgeActions";
+import { useMagicPromptTemplates } from "../magicPrompts/useMagicPrompts";
 import { KnowledgeNotes } from "./KnowledgeNotes";
 import { KnowledgePlanView } from "./KnowledgePlanView";
 import { KnowledgePlans } from "./KnowledgePlans";
@@ -46,6 +47,7 @@ export function KnowledgePanel(props: {
   );
   const canEdit = useAtomValue(knowledgeEnvironment.save.permissionAtom(threadRef.environmentId));
   const commands = useKnowledgeCommands(threadRef.environmentId);
+  const templates = useMagicPromptTemplates(threadRef.environmentId, projectId);
   const [tab, setTab] = useState<KnowledgeTab>("notes");
   const [query, setQuery] = useState("");
   const [openPlanId, setOpenPlanId] = useState<KnowledgePlanId | null>(null);
@@ -83,6 +85,7 @@ export function KnowledgePanel(props: {
         composerDraftTarget={props.composerDraftTarget}
         canEdit={canEdit}
         commands={commands}
+        templates={templates}
         onBack={() => setOpenPlanId(null)}
       />
     );
@@ -96,6 +99,7 @@ export function KnowledgePanel(props: {
     canEdit,
     commands,
     filtered: query.trim() !== "",
+    templates,
   };
   return (
     <div className="flex h-full min-h-0 flex-col">

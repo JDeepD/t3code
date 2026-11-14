@@ -1,3 +1,7 @@
+import {
+  MAGIC_INSTRUCTIONS_KIND,
+  MAGIC_INSTRUCTIONS_TOOLTIP,
+} from "./magicPrompts/magicPromptInstructions";
 import ChatMarkdown from "./ChatMarkdown";
 import { isSvgAttachment } from "@t3tools/shared/image";
 import { ReadOnlySourcePreview } from "./files/AttachmentFilePreview";
@@ -481,7 +485,12 @@ const composerContextPresentationRegistry = createContextPresentationRegistry<
         ),
     },
   ],
-  fallback: (_kind, _entry, context) => <UnresolvedContextChip label={context.label} />,
+  fallback: (kind, _entry, context) =>
+    kind === MAGIC_INSTRUCTIONS_KIND ? (
+      <UnresolvedChip label={context.label} tooltip={MAGIC_INSTRUCTIONS_TOOLTIP} />
+    ) : (
+      <UnresolvedContextChip label={context.label} />
+    ),
 });
 
 export function ComposerContextReferenceChip(props: {

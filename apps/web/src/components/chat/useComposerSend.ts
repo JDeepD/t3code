@@ -1,3 +1,4 @@
+import { withMagicInstructionRecords } from "../magicPrompts/magicPromptInstructions";
 import { isClearComposerCommand, parseSideChatCommand } from "@t3tools/shared/composerTrigger";
 import { armFreshSession, disarmFreshSession, readFreshSessionArm } from "./freshSessionArms";
 import {
@@ -815,6 +816,8 @@ export function useComposerSend(input: ComposerSendInput) {
     // row, the upload id (or local id on the data-URL path) on the wire; the server
     // rebinds them to the persisted id.
     const buildOutgoingMessageContext = (attachmentIds: ReadonlyArray<string>) =>
+      withMagicInstructionRecords(buildKnownMessageContext(attachmentIds), messageTextForSend);
+    const buildKnownMessageContext = (attachmentIds: ReadonlyArray<string>) =>
       buildMessageContext({
         terminalContexts: composerTerminalContextsSnapshot,
         reviewComments: composerReviewCommentsSnapshot,

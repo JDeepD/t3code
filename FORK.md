@@ -90,23 +90,20 @@ the command palette). **Add to notes** on a text selection or under a reply save
 links back to the chat. Todos can be reordered and grouped by plan. A plan is a markdown file that
 agents can read and edit with their normal file tools; an edit on disk shows up in the panel, and
 the panel will not overwrite a newer copy without asking. **Plan this**, **Improve plan** and
-**Implement plan** put a prompt in the composer (Phase 3 turns these into magic prompts).
+**Implement plan** put the matching magic prompt in the composer.
 
 The server advertises the `knowledge` capability. The UI is hidden on a server without it, such as
 upstream, and the mobile apps ignore it.
 
-Data lives in the T3 home's state folder (`~/.t3-fork/userdata/fork/`). Back up that folder:
-
-- `knowledge.sqlite`: notes, todos and plan metadata, with its own `fork_schema_version` table. To
-  change the schema, append an entry to `SCHEMA_MIGRATIONS`; never edit a shipped one.
-- `plans/<projectId>/<slug>.md`: the plan files.
+Its data is in the fork's state folder; see [Fork data](#fork-data).
 
 Files:
 
 - `packages/contracts/src/knowledge.ts`: schemas and errors. Hook-ins: `rpc.ts` (five
   `knowledge.*` methods), `environment.ts` (capability), `clientRpcPermissions.ts` (write scopes)
-- `apps/server/src/knowledge/KnowledgeStore.ts`: the service and its tests. Hook-ins: `ws.ts`
-  (handlers and layer), `RpcAuthorization.ts`, `RpcInstrumentation.ts`, `ServerEnvironment.ts`
+- `apps/server/src/knowledge/KnowledgeStore.ts`: the service and its tests, on
+  `apps/server/src/fork/ForkDatabase.ts`. Hook-ins: `ws.ts` (handlers and layers),
+  `RpcAuthorization.ts`, `RpcInstrumentation.ts`, `ServerEnvironment.ts`
 - `packages/client-runtime/src/state/knowledge.ts` and `apps/web/src/state/knowledge.ts`: atoms.
   Hook-in: `rpc/client.ts` (stream tag)
 - `apps/web/src/components/knowledge/`: the panel, its tabs, actions and logic tests. Hook-ins:
@@ -120,3 +117,58 @@ Not built: agent tools for listing and adding notes and todos. They would need a
 `McpToolExposure.ts`, a setting to turn them on, and eval cases for the tool descriptions
 (`evals/README.md`). `KnowledgeStore.list` and `save` are the service methods they would call.
 Todo dependencies (`dependsOn`) are stored and validated but have no UI yet.
+
+### Magic prompts (web and desktop)
+
+Editable prompt templates in **Settings → Magic prompts**. Each has a visible prompt (your
+message) and instructions (read only by the agent), with `{{placeholder}}` substitution. The
+built-in text can be overridden globally and per project; the page's scope picker chooses which.
+A project override wins over the global one, one part at a time.
+
+- **Session commands:** `/catch-up`, `/summary`, `/debug`, `/weigh`, `/tour`, `/review` and
+  `/resolve-conflicts` at the start of a message insert the template. A provider command or skill
+  of the same name wins. A template with a placeholder leaves the composer ready for you to type
+  the missing part; there is no separate form.
+- **Planning:** **Plan this**, **Improve plan** and **Implement plan** in the notes panel.
+- **Git:** the `git.commit` and `git.pr` instructions are added after the writing style chosen in
+  Settings → Source control, so both apply. They are empty by default, which keeps generated
+  commits and pull requests the same as upstream until you edit them.
+
+Instructions travel as a context record of kind `instructions`, referenced by a chip in the
+message. Deleting the chip drops them. The agent receives them in the message's context block;
+the mobile apps show the chip as its label. They are attached on a normal send only, not when
+editing a queued message or sending to several models at once.
+
+Not built: a `memory.tidy` template (it needs the agent tools above), and using `git.conflict`
+for the pull request **Resolve conflicts** button, which keeps upstream's prompt. T3 Code has no
+list of locally conflicted files, so `{{files}}` is only filled if you type it.
+
+Files:
+
+- `packages/contracts/src/magicPrompts.ts`: schemas and placeholder helpers. Hook-ins: `rpc.ts`
+  (three `magicPrompts.*` methods), `environment.ts`, `clientRpcPermissions.ts`
+- `apps/server/src/magicPrompts/`: `builtinTemplates.ts` (the default text) and
+  `MagicPromptStore.ts`. Hook-ins: `ws.ts`, `server.ts` and `git/GitManager.ts`
+  (`withMagicPrompt`), plus the auth and metrics tables
+- `packages/client-runtime/src/state/magicPrompts.ts`, `apps/web/src/state/magicPrompts.ts`
+- `apps/web/src/components/magicPrompts/`: settings page, slash-command items, the instructions
+  channel and tests. Hook-ins: `routes/_chat.settings.magic-prompts.tsx`, `settingsSearch.ts`,
+  `useAvailableSettingsSearchItems.ts`, `SettingsSidebarNav.tsx`, `ComposerCommandMenu.tsx`,
+  `useComposerMenuItems.ts`, `ChatComposer.tsx`, `useComposerSend.ts`,
+  `UserMessageContextChips.tsx`, `composerContextPresentation.tsx`
+
+## Fork data
+
+Everything the fork stores is in the T3 home's state folder, `~/.t3-fork/userdata/fork/`. Back up
+that folder with the server stopped:
+
+- `fork.sqlite`: notes, todos, plan metadata and magic prompt overrides, with its own
+  `fork_schema_version` table. To change the schema, append an entry to `SCHEMA_MIGRATIONS` in
+  `ForkDatabase.ts`; never edit a shipped one.
+- `plans/<projectId>/<slug>.md`: the plan files.
+
+## Known limits
+
+- None of the fork features appear in the mobile apps or on `app.t3.codes`, which serve upstream
+  code. Use the fork's own web app or desktop build.
+- Against an unmodified upstream server, the fork's web client hides all of them.

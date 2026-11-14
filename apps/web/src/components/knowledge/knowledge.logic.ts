@@ -84,7 +84,7 @@ export function groupTodosByPlan(
   return groups;
 }
 
-// Phase 3 replaces these with editable magic prompts.
+// Used where the server has no magic prompts, such as upstream.
 export function planThisPrompt(todoText: string): string {
   return `Help me plan this todo. Ask clarifying questions first, agree on an outline with me, then write the plan.\n\n> ${todoText.trim().split(/\r?\n/).join("\n> ")}`;
 }

@@ -11,6 +11,7 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
+import * as MagicPromptStore from "../magicPrompts/MagicPromptStore.ts";
 import * as Option from "effect/Option";
 import * as Order from "effect/Order";
 import * as Path from "effect/Path";
@@ -716,13 +717,15 @@ export const make = Effect.gen(function* () {
   const serverSettingsService = yield* ServerSettings.ServerSettingsService;
   const threads = yield* ProjectionStore.ProjectionStoreV2;
   const projects = yield* ProjectStore.ProjectStoreV2;
+  // Fork: absent in tests. A project's magic prompts need its id even without settings overrides.
+  const magicPrompts = yield* Effect.serviceOption(MagicPromptStore.MagicPromptStore);
   const projectSettingsFor = Effect.fnUntraced(function* (input: {
     readonly cwd: string;
     readonly threadId?: ThreadId | undefined;
     readonly projectId?: ProjectId | undefined;
   }) {
     const settings = yield* serverSettingsService.getSettings;
-    if (!hasProjectSettingsOverrides(settings))
+    if (!hasProjectSettingsOverrides(settings) && Option.isNone(magicPrompts))
       return { settings, projectId: null as ProjectId | null };
     const threadProjectId =
       input.threadId === undefined
@@ -909,6 +912,20 @@ export const make = Effect.gen(function* () {
         };
       }
     }
+  });
+  // Fork: a magic prompt's instructions follow the chosen style's.
+  const withMagicPrompt = Effect.fnUntraced(function* (
+    policy: Effect.Success<ReturnType<typeof resolveStylePolicy>>,
+    field: "commitInstructions" | "changeRequestInstructions",
+    id: "git.commit" | "git.pr",
+    projectId: ProjectId | null,
+    values: Readonly<Record<string, string>>,
+  ) {
+    if (Option.isNone(magicPrompts)) return policy;
+    const extra = yield* magicPrompts.value.renderInstructions(id, projectId, values);
+    if (extra === "") return policy;
+    const base = policy[field];
+    return { ...policy, [field]: base ? `${base}\n\n${extra}` : extra };
   });
   const randomUUIDv4 = (cwd: string) =>
     random.uuidV4().pipe(
@@ -2204,7 +2221,13 @@ export const make = Effect.gen(function* () {
         };
       }
 
-      const policy = yield* resolveStylePolicy(input.cwd, input.settings);
+      const policy = yield* withMagicPrompt(
+        yield* resolveStylePolicy(input.cwd, input.settings),
+        "commitInstructions",
+        "git.commit",
+        input.settings.projectId,
+        { diff_summary: limitContext(context.stagedSummary, 8_000) },
+      );
 
       const generated = yield* textGeneration
         .generateCommitMessage({
@@ -2429,7 +2452,13 @@ export const make = Effect.gen(function* () {
     });
     const baseRangeRef = yield* resolveBaseRangeRef(cwd, baseRef);
     const rangeContext = yield* gitCore.readRangeContext(cwd, baseRangeRef);
-    const policy = yield* resolveStylePolicy(cwd, settings);
+    const policy = yield* withMagicPrompt(
+      yield* resolveStylePolicy(cwd, settings),
+      "changeRequestInstructions",
+      "git.pr",
+      settings.projectId,
+      { branch: headContext.headBranch, base: baseBranch },
+    );
     const changeRequestTemplate =
       settings.style.followChangeRequestTemplates && provider.readChangeRequestTemplate
         ? Option.getOrUndefined(

@@ -1,3 +1,4 @@
+import type { MagicPromptCommandItem } from "../magicPrompts/magicPromptCommands";
 import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
 import type { ComposerPathSearchTarget } from "@t3tools/client-runtime/state/threads";
 import {
@@ -38,6 +39,7 @@ import { ComposerBanner } from "./ComposerBanner";
 import { resolvePullRequestState } from "../pullRequest/pullRequestPresentation";
 
 export type ComposerCommandItem =
+  | MagicPromptCommandItem
   | {
       id: string;
       type: "path";

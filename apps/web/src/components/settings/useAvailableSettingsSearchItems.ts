@@ -35,6 +35,10 @@ export function useAvailableSettingsSearchItems() {
         environment.connection.phase === "connected" &&
         environment.serverConfig?.environment.capabilities.fastWorktreeCheckout === true,
     ) === true;
+  const hasMagicPromptsEnvironment =
+    environments.some(
+      (environment) => environment.serverConfig?.environment.capabilities.magicPrompts === true,
+    ) === true;
   const hasTextGeneratorsEnvironment =
     environments.some(
       (environment) =>
@@ -71,6 +75,7 @@ export function useAvailableSettingsSearchItems() {
     managedTunnelActive,
     hasPeerLinkHost,
     hasFastWorktreeCheckoutEnvironment,
+    hasMagicPromptsEnvironment,
     hasTextGeneratorsEnvironment,
     hasPrimaryEnvironment: primaryEnvironmentId !== null,
   });

@@ -1,3 +1,7 @@
+import {
+  MAGIC_INSTRUCTIONS_KIND,
+  MAGIC_INSTRUCTIONS_TOOLTIP,
+} from "../magicPrompts/magicPromptInstructions";
 import { documentChipKindForFileName } from "~/pierre-icons";
 import { isSvgAttachment } from "@t3tools/shared/image";
 import { useRenderedAppearance } from "../../hooks/useTheme";
@@ -282,7 +286,11 @@ function UnavailableUserMessageContextChip(props: UserMessageContextRenderContex
     <UnresolvedChip
       label={props.reference.label}
       copyMarkdown={props.copyMarkdown}
-      tooltip="This context is no longer available."
+      tooltip={
+        props.reference.kind === MAGIC_INSTRUCTIONS_KIND
+          ? MAGIC_INSTRUCTIONS_TOOLTIP
+          : "This context is no longer available."
+      }
     />
   );
 }

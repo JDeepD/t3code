@@ -66,6 +66,7 @@ export * from "./previewCapture.ts";
 export * from "./usage.ts";
 export * from "./scheduledTask.ts";
 export * from "./knowledge.ts";
+export * from "./magicPrompts.ts";
 export * from "./worktreeMcp.ts";
 export * from "./resourceTelemetry.ts";
 export * from "./rpc.ts";

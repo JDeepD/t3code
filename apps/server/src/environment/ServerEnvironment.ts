@@ -230,6 +230,7 @@ export const make = Effect.gen(function* () {
       linkedThreadRefreshes: true,
       sideChats: true,
       knowledge: true,
+      magicPrompts: true,
       vcsBranchStatus: true,
       inlineMessageContext: true,
       requiredWorktreeBootstrap: true,

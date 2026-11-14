@@ -1,3 +1,5 @@
+import { composeMagicPrompt } from "../magicPrompts/magicPromptInstructions";
+import { useMagicPromptTemplates } from "../magicPrompts/useMagicPrompts";
 import { VoiceInputSetup } from "./VoiceInputSetup";
 import { useComposerTypingGuard } from "./useComposerTypingGuard";
 import { insertAttachmentReferencesForDraft } from "./composerAttachmentReferences";
@@ -1115,6 +1117,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     composerPreviewAnnotations.length === 0 &&
     composerReviewComments.length === 0;
   const linkedEnvironments = useLinkedEnvironments(environmentId);
+  const magicPromptTemplates = useMagicPromptTemplates(environmentId, activeProjectId);
   const {
     items: composerMenuItems,
     isLoading: isComposerMenuLoading,
@@ -1139,6 +1142,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     workspaceSkillsScanning,
     questionAttachmentTarget,
     modelMentions: { instanceEntries: providerInstanceEntries, modelOptionsByInstance },
+    magicPromptTemplates,
   });
 
   const composerMenuOpen = Boolean(composerTrigger);
@@ -1906,6 +1910,16 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       if (applied) {
         setComposerHighlightedItemId(null);
       }
+      return;
+    }
+    if (item.type === "magic-prompt") {
+      const applied = applyPromptReplacement(
+        trigger.rangeStart,
+        trigger.rangeEnd,
+        composeMagicPrompt(item.template, null, randomUUID()),
+        { expectedText: snapshot.value.slice(trigger.rangeStart, trigger.rangeEnd) },
+      );
+      if (applied) setComposerHighlightedItemId(null);
       return;
     }
     if (item.type === "slash-command") {

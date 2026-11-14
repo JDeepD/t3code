@@ -28,6 +28,7 @@ export type SettingsPath =
   | "/settings/snap-shot"
   | "/settings/providers"
   | "/settings/threads"
+  | "/settings/magic-prompts"
   | "/settings/browser"
   | "/settings/devices"
   | "/settings/scheduled-tasks"
@@ -72,6 +73,8 @@ export interface SettingsSearchItem {
   readonly peerLinksOnly?: boolean;
   readonly fastWorktreeCheckoutOnly?: boolean;
   readonly textGeneratorsOnly?: boolean;
+  /** Fork: only where an environment serves magic prompts. */
+  readonly magicPromptsOnly?: boolean;
   readonly secondary?: boolean;
   readonly requiresThreadAutoSettlement?: boolean;
 }
@@ -90,6 +93,7 @@ export interface SettingsSearchAvailability {
   /** An environment without a provider allow-list, which hides text generators. */
   readonly hasTextGeneratorsEnvironment?: boolean;
   readonly hasPrimaryEnvironment?: boolean;
+  readonly hasMagicPromptsEnvironment?: boolean;
 }
 
 export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
@@ -103,6 +107,7 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/snap-shot": msg("SnapShots"),
   "/settings/providers": msg("Providers"),
   "/settings/threads": msg("Threads"),
+  "/settings/magic-prompts": msg("Magic prompts"),
   "/settings/browser": msg("Browser"),
   "/settings/devices": msg("Devices"),
   "/settings/scheduled-tasks": msg("Scheduled tasks"),
@@ -142,6 +147,7 @@ export const SETTINGS_NAV_GROUPS: ReadonlyArray<{
     paths: [
       "/settings/providers",
       "/settings/threads",
+      "/settings/magic-prompts",
       "/settings/browser",
       "/settings/devices",
       "/settings/scheduled-tasks",
@@ -861,6 +867,16 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["generated thread titles source control content default provider"],
   },
   {
+    id: "magic-prompts",
+    title: "Magic prompts",
+    to: "/settings/magic-prompts",
+    scope: "project-defaults",
+    magicPromptsOnly: true,
+    searchTerms: [
+      "prompt templates instructions placeholders commit pull request plan catch up summary debug weigh tour review slash commands",
+    ],
+  },
+  {
     id: "thread-title-instructions",
     title: "Thread title instructions",
     to: "/settings/threads",
@@ -1387,6 +1403,7 @@ const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScop
   "/settings/keybindings": null,
   "/settings/providers": null,
   "/settings/threads": null,
+  "/settings/magic-prompts": null,
   "/settings/browser": null,
   "/settings/devices": null,
   "/settings/source-control": "environment-defaults",
@@ -1525,7 +1542,8 @@ export function filterAvailableSettingsSearchItems(
       (!item.peerLinksOnly || availability.hasPeerLinkHost === true) &&
       (!item.fastWorktreeCheckoutOnly ||
         availability.hasFastWorktreeCheckoutEnvironment === true) &&
-      (!item.textGeneratorsOnly || availability.hasTextGeneratorsEnvironment === true),
+      (!item.textGeneratorsOnly || availability.hasTextGeneratorsEnvironment === true) &&
+      (!item.magicPromptsOnly || availability.hasMagicPromptsEnvironment === true),
   );
 }
 

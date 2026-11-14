@@ -17,7 +17,7 @@ import { Input } from "../ui/input";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { ScrollArea } from "../ui/scroll-area";
 import { groupTodosByPlan, planThisPrompt, sortKeyForMove } from "./knowledge.logic";
-import { insertIntoComposer, type KnowledgeTabProps } from "./knowledgeActions";
+import { insertMagicPrompt, type KnowledgeTabProps } from "./knowledgeActions";
 import { KnowledgeIconAction } from "./KnowledgeIconAction";
 
 function TodoRow(
@@ -90,7 +90,15 @@ function TodoRow(
       <div className="flex shrink-0 items-center opacity-0 group-focus-within/todo:opacity-100 group-hover/todo:opacity-100 pointer-coarse:opacity-100">
         <KnowledgeIconAction
           label="Plan this"
-          onClick={() => insertIntoComposer(props.composerDraftTarget, planThisPrompt(todo.body))}
+          onClick={() =>
+            insertMagicPrompt(
+              props.composerDraftTarget,
+              props.templates,
+              "plan.todo",
+              { todo_text: todo.body },
+              planThisPrompt(todo.body),
+            )
+          }
         >
           <LightbulbIcon className="size-3" />
         </KnowledgeIconAction>

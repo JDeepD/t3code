@@ -396,6 +396,13 @@ import {
   KnowledgeSubscribeInput,
   KnowledgeWritePlanInput,
 } from "./knowledge.ts";
+import {
+  MagicPromptError,
+  MagicPromptListInput,
+  MagicPromptListResult,
+  MagicPromptResetInput,
+  MagicPromptSaveInput,
+} from "./magicPrompts.ts";
 import { SecretRequestAnswerInput, SecretRequestError } from "./secretRequest.ts";
 import {
   ProjectCloneActionInput,
@@ -578,6 +585,10 @@ export const WS_METHODS = {
   knowledgeDelete: "knowledge.delete",
   knowledgeReadPlan: "knowledge.readPlan",
   knowledgeWritePlan: "knowledge.writePlan",
+
+  magicPromptsList: "magicPrompts.list",
+  magicPromptsSave: "magicPrompts.save",
+  magicPromptsReset: "magicPrompts.reset",
 
   cloudGetRelayClientStatus: "cloud.getRelayClientStatus",
   cloudInstallRelayClient: "cloud.installRelayClient",
@@ -2133,6 +2144,26 @@ const WsKnowledgeWritePlanRpc = Rpc.make(WS_METHODS.knowledgeWritePlan, {
   error: KnowledgeRpcError,
 });
 
+const MagicPromptRpcError = Schema.Union([MagicPromptError, EnvironmentAuthorizationError]);
+
+const WsMagicPromptsListRpc = Rpc.make(WS_METHODS.magicPromptsList, {
+  payload: MagicPromptListInput,
+  success: MagicPromptListResult,
+  error: MagicPromptRpcError,
+});
+
+const WsMagicPromptsSaveRpc = Rpc.make(WS_METHODS.magicPromptsSave, {
+  payload: MagicPromptSaveInput,
+  success: Schema.Void,
+  error: MagicPromptRpcError,
+});
+
+const WsMagicPromptsResetRpc = Rpc.make(WS_METHODS.magicPromptsReset, {
+  payload: MagicPromptResetInput,
+  success: Schema.Void,
+  error: MagicPromptRpcError,
+});
+
 const WsSubscribeAuthAccessRpc = Rpc.make(WS_METHODS.subscribeAuthAccess, {
   payload: Schema.Struct({}),
   success: AuthAccessStreamEvent,
@@ -2227,6 +2258,9 @@ export const WsRpcGroup = RpcGroup.make(
   WsKnowledgeDeleteRpc,
   WsKnowledgeReadPlanRpc,
   WsKnowledgeWritePlanRpc,
+  WsMagicPromptsListRpc,
+  WsMagicPromptsSaveRpc,
+  WsMagicPromptsResetRpc,
   WsServerReportClientActivityRpc,
   WsCloudGetRelayClientStatusRpc,
   WsCloudInstallRelayClientRpc,

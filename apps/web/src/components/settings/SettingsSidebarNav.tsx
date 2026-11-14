@@ -1,3 +1,4 @@
+import { useMagicPromptsOffered } from "../magicPrompts/useMagicPrompts";
 import {
   lazy,
   Suspense,
@@ -30,6 +31,7 @@ import {
   Settings2Icon,
   ShieldCheckIcon,
   SmartphoneIcon,
+  ScrollTextIcon,
   WrenchIcon,
   XIcon,
 } from "lucide-react";
@@ -99,6 +101,7 @@ const SETTINGS_SECTION_ICONS: Readonly<
   "/settings/snap-shot": SnapShotIcon,
   "/settings/providers": BotIcon,
   "/settings/threads": MessagesSquareIcon,
+  "/settings/magic-prompts": ScrollTextIcon,
   "/settings/browser": GlobeIcon,
   "/settings/devices": SmartphoneIcon,
   "/settings/scheduled-tasks": CalendarClockIcon,
@@ -142,6 +145,10 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
   const [compactSearchOpen, setCompactSearchOpen] = useState(false);
   const [activeResultIndex, setActiveResultIndex] = useState(0);
   const searchableItems = useAvailableSettingsSearchItems();
+  // Fork: the page exists only where an environment serves magic prompts.
+  const magicPromptsOffered = useMagicPromptsOffered();
+  const isSettingsPathOffered = (to: SettingsPath) =>
+    to !== "/settings/magic-prompts" || magicPromptsOffered;
   const results = searchSettings(query, searchableItems, m);
   const isSearching = query.trim().length > 0;
   const hasResults = results.length > 0;
@@ -395,7 +402,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
                       {/* The heading stays outside the group it names so NVDA does not read the name twice. */}
                       <div role="group" aria-labelledby={`settings-nav-group-${index}`}>
                         <SidebarMenu>
-                          {group.paths.map((to) => {
+                          {group.paths.filter(isSettingsPathOffered).map((to) => {
                             const Icon = SETTINGS_SECTION_ICONS[to];
                             const isActive = activePath === to || activePath.startsWith(`${to}/`);
                             return (

@@ -1,5 +1,5 @@
-// Fork feature. Owns its own SQLite file and plans directory, so it never touches the upstream
-// migration chain. See FORK.md.
+// Fork feature: per-project notes, todos and plans. Plans are markdown files beside the fork
+// database. See FORK.md.
 import {
   type KnowledgeDeleteInput,
   KnowledgeConflictError,
@@ -37,10 +37,9 @@ import * as Option from "effect/Option";
 import * as Path from "effect/Path";
 import * as PubSub from "effect/PubSub";
 import * as Schema from "effect/Schema";
-import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 
-import * as ServerConfig from "../config.ts";
+import * as ForkDatabase from "../fork/ForkDatabase.ts";
 
 type KnowledgeFailure =
   | KnowledgeConflictError
@@ -70,50 +69,6 @@ export class KnowledgeStore extends Context.Service<
     ) => Effect.Effect<KnowledgePlanDocument, KnowledgeFailure>;
   }
 >()("t3/knowledge/KnowledgeStore") {}
-
-export interface KnowledgePaths {
-  readonly dbPath: string;
-  readonly plansDir: string;
-}
-
-// Each entry upgrades the schema by one version. Append; never edit a shipped entry.
-const SCHEMA_MIGRATIONS: ReadonlyArray<ReadonlyArray<string>> = [
-  [
-    `CREATE TABLE knowledge_notes (
-      id TEXT PRIMARY KEY,
-      project_id TEXT NOT NULL,
-      body TEXT NOT NULL,
-      pinned INTEGER NOT NULL DEFAULT 0,
-      source_json TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )`,
-    `CREATE INDEX knowledge_notes_project ON knowledge_notes (project_id)`,
-    `CREATE TABLE knowledge_todos (
-      id TEXT PRIMARY KEY,
-      project_id TEXT NOT NULL,
-      body TEXT NOT NULL,
-      completed INTEGER NOT NULL DEFAULT 0,
-      plan_id TEXT,
-      depends_on_json TEXT NOT NULL DEFAULT '[]',
-      sort_key REAL NOT NULL,
-      source_json TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )`,
-    `CREATE INDEX knowledge_todos_project ON knowledge_todos (project_id)`,
-    `CREATE TABLE knowledge_plans (
-      id TEXT PRIMARY KEY,
-      project_id TEXT NOT NULL,
-      title TEXT NOT NULL,
-      path TEXT NOT NULL,
-      thread_id TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )`,
-    `CREATE INDEX knowledge_plans_project ON knowledge_plans (project_id)`,
-  ],
-];
 
 type NoteRow = {
   readonly id: string;
@@ -197,42 +152,14 @@ const planFileSlug = (title: string) =>
 
 const projectDirectoryName = (projectId: ProjectId) => projectId.replace(/[^A-Za-z0-9_-]/g, "_");
 
-const make = Effect.fn("KnowledgeStore.make")(function* (paths: KnowledgePaths) {
+const make = Effect.fn("KnowledgeStore.make")(function* (plansDir: string) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const random = yield* SecureRandom.SecureRandom;
+  const { sql } = yield* ForkDatabase.ForkDatabase;
 
   const storageError = (operation: string) => (cause: unknown) =>
     new KnowledgeStorageError({ operation, cause });
-
-  yield* fs
-    .makeDirectory(path.dirname(paths.dbPath), { recursive: true })
-    .pipe(Effect.mapError(storageError("create the knowledge folder")));
-  // A private client: the server's SqlClient service is the upstream database.
-  const sql = Context.get(
-    yield* Layer.build(NodeSqliteClient.layer({ filename: paths.dbPath })),
-    SqlClient.SqlClient,
-  );
-
-  yield* Effect.gen(function* () {
-    yield* sql`PRAGMA busy_timeout = 5000;`;
-    yield* sql`PRAGMA journal_mode = WAL;`;
-    yield* sql`CREATE TABLE IF NOT EXISTS fork_schema_version (version INTEGER NOT NULL)`;
-    const recorded = yield* sql<{ readonly version: number }>`
-      SELECT version FROM fork_schema_version
-    `;
-    const current = recorded[0]?.version ?? 0;
-    if (recorded.length === 0) yield* sql`INSERT INTO fork_schema_version (version) VALUES (0)`;
-    for (const [index, statements] of SCHEMA_MIGRATIONS.entries()) {
-      if (index < current) continue;
-      yield* sql.withTransaction(
-        Effect.gen(function* () {
-          for (const statement of statements) yield* sql.unsafe(statement);
-          yield* sql`UPDATE fork_schema_version SET version = ${index + 1}`;
-        }),
-      );
-    }
-  }).pipe(Effect.mapError(storageError("open the knowledge database")));
 
   // Any change re-reads each subscriber's project; identical snapshots are dropped there.
   const changes = yield* PubSub.sliding<void>(1);
@@ -292,7 +219,7 @@ const make = Effect.fn("KnowledgeStore.make")(function* (paths: KnowledgePaths) 
   );
 
   const projectPlansDir = (projectId: ProjectId) =>
-    path.join(paths.plansDir, projectDirectoryName(projectId));
+    path.join(plansDir, projectDirectoryName(projectId));
 
   const subscribe: KnowledgeStore["Service"]["subscribe"] = (projectId) =>
     Stream.unwrap(
@@ -630,16 +557,12 @@ const make = Effect.fn("KnowledgeStore.make")(function* (paths: KnowledgePaths) 
   return KnowledgeStore.of({ list, subscribe, save, delete: deleteItem, readPlan, writePlan });
 });
 
-export const layerAt = (paths: KnowledgePaths) => Layer.effect(KnowledgeStore, make(paths));
+export const layerAt = (plansDir: string) => Layer.effect(KnowledgeStore, make(plansDir));
 
 export const layer = Layer.unwrap(
   Effect.gen(function* () {
-    const { stateDir } = yield* ServerConfig.ServerConfig;
+    const { directory } = yield* ForkDatabase.ForkDatabase;
     const path = yield* Path.Path;
-    const forkDir = path.join(stateDir, "fork");
-    return layerAt({
-      dbPath: path.join(forkDir, "knowledge.sqlite"),
-      plansDir: path.join(forkDir, "plans"),
-    });
+    return layerAt(path.join(directory, "plans"));
   }),
 );

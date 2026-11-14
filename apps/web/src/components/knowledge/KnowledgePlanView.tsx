@@ -1,6 +1,7 @@
 import {
   KNOWLEDGE_PLAN_MAX_CHARS,
   type KnowledgePlan,
+  type MagicPromptTemplate,
   type ScopedThreadRef,
 } from "@t3tools/contracts";
 import {
@@ -23,7 +24,7 @@ import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
 import { Textarea } from "../ui/textarea";
 import { implementPlanPrompt, improvePlanPrompt } from "./knowledge.logic";
-import { insertIntoComposer, type KnowledgeCommands } from "./knowledgeActions";
+import { insertMagicPrompt, type KnowledgeCommands } from "./knowledgeActions";
 import { KnowledgeIconAction } from "./KnowledgeIconAction";
 
 /** One plan: its markdown file rendered, with an editor that will not overwrite a newer copy. */
@@ -34,6 +35,7 @@ export function KnowledgePlanView(props: {
   readonly composerDraftTarget: ScopedThreadRef | DraftId;
   readonly canEdit: boolean;
   readonly commands: KnowledgeCommands;
+  readonly templates: ReadonlyArray<MagicPromptTemplate>;
   readonly onBack: () => void;
 }) {
   const { plan, commands, threadRef } = props;
@@ -68,11 +70,18 @@ export function KnowledgePlanView(props: {
     setSaving(false);
     if (result._tag === "Success") setDraft(null);
   };
+  const planValues = { plan_path: plan.path, plan_title: plan.title };
   const setLink = (threadId: ScopedThreadRef["threadId"] | null) =>
     commands.save({ kind: "plan", id: plan.id, projectId: plan.projectId, threadId });
   const implement = () => {
     if (props.canEdit && !linked) void setLink(threadRef.threadId);
-    insertIntoComposer(props.composerDraftTarget, implementPlanPrompt(plan));
+    insertMagicPrompt(
+      props.composerDraftTarget,
+      props.templates,
+      "plan.implement",
+      planValues,
+      implementPlanPrompt(plan),
+    );
   };
   const remove = async () => {
     const confirmed = await readLocalApi()?.dialogs.confirm(
@@ -92,7 +101,15 @@ export function KnowledgePlanView(props: {
         <h2 className="min-w-0 flex-1 truncate text-sm font-medium">{plan.title}</h2>
         <KnowledgeIconAction
           label="Improve plan"
-          onClick={() => insertIntoComposer(props.composerDraftTarget, improvePlanPrompt(plan))}
+          onClick={() =>
+            insertMagicPrompt(
+              props.composerDraftTarget,
+              props.templates,
+              "plan.improve",
+              planValues,
+              improvePlanPrompt(plan),
+            )
+          }
         >
           <PencilRulerIcon className="size-3" />
         </KnowledgeIconAction>

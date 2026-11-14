@@ -14,6 +14,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import { TestClock } from "effect/testing";
 
+import * as ForkDatabase from "../fork/ForkDatabase.ts";
 import * as KnowledgeStore from "./KnowledgeStore.ts";
 
 const projectId = ProjectId.make("project-a");
@@ -27,12 +28,16 @@ const tempPaths = Effect.gen(function* () {
 
 /** Runs `use` against a store opened on `paths`, closing it afterwards. */
 const withStore = <A, E, R>(
-  paths: KnowledgeStore.KnowledgePaths,
+  paths: { readonly dbPath: string; readonly plansDir: string },
   use: (store: KnowledgeStore.KnowledgeStore["Service"]) => Effect.Effect<A, E, R>,
 ) =>
   KnowledgeStore.KnowledgeStore.pipe(
     Effect.flatMap(use),
-    Effect.provide(KnowledgeStore.layerAt(paths)),
+    Effect.provide(
+      KnowledgeStore.layerAt(paths.plansDir).pipe(
+        Layer.provide(ForkDatabase.layerAt(paths.dbPath)),
+      ),
+    ),
   );
 
 const newTodo = (store: KnowledgeStore.KnowledgeStore["Service"], body: string, extra = {}) =>
@@ -295,7 +300,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("KnowledgeStore",
         const sql = yield* SqlClient.SqlClient;
         return yield* sql<{ readonly version: number }>`SELECT version FROM fork_schema_version`;
       }).pipe(Effect.provide(NodeSqliteClient.layer({ filename: older.dbPath })));
-      assert.deepStrictEqual(version, [{ version: 1 }]);
+      assert.deepStrictEqual(version, [{ version: 2 }]);
     }),
   );
 });

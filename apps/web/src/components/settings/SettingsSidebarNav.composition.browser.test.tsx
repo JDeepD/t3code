@@ -76,9 +76,10 @@ it("moves Tab through every settings section", async () => {
   await using _screen = await renderNav();
   await userEvent.click(page.getByRole("combobox", { name: "Search settings" }));
 
-  const sections = SETTINGS_NAV_GROUPS.flatMap((group) => group.paths).map(
-    (to) => SETTINGS_SECTION_LABELS[to],
-  );
+  const sections = SETTINGS_NAV_GROUPS.flatMap((group) => group.paths)
+    // Fork: hidden until an environment serves magic prompts, and none does here.
+    .filter((to) => to !== "/settings/magic-prompts")
+    .map((to) => SETTINGS_SECTION_LABELS[to]);
   const tabbed: string[] = [];
   for (let step = 0; step < sections.length; step += 1) {
     await userEvent.tab();

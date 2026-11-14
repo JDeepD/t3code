@@ -1,6 +1,8 @@
 import type {
   EnvironmentId,
   KnowledgeSource,
+  MagicPromptId,
+  MagicPromptTemplate,
   ProjectId,
   ScopedThreadRef,
 } from "@t3tools/contracts";
@@ -11,9 +13,11 @@ import {
 } from "@t3tools/client-runtime/state/runtime";
 import type { DraftId } from "~/composerDraftStore";
 import { useComposerDraftStore } from "~/composerDraftStore";
+import { randomUUID } from "~/lib/utils";
 import { useRightPanelStore } from "~/rightPanelStore";
 import { knowledgeEnvironment } from "~/state/knowledge";
 import { useAtomCommand } from "~/state/use-atom-command";
+import { composeMagicPrompt } from "../magicPrompts/magicPromptInstructions";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { type NoteFromChat, noteBodyFromText, sourceExcerpt } from "./knowledge.logic";
 
@@ -107,6 +111,24 @@ export function useKnowledgeCommands(environmentId: EnvironmentId) {
 
 export type KnowledgeCommands = ReturnType<typeof useKnowledgeCommands>;
 
+/**
+ * Puts a magic prompt in the composer with its placeholders filled. Where the server has no
+ * magic prompts (upstream), `fallback` is inserted as plain text.
+ */
+export function insertMagicPrompt(
+  target: ScopedThreadRef | DraftId,
+  templates: ReadonlyArray<MagicPromptTemplate>,
+  id: MagicPromptId,
+  values: Readonly<Record<string, string>>,
+  fallback: string,
+) {
+  const template = templates.find((candidate) => candidate.id === id);
+  insertIntoComposer(
+    target,
+    template === undefined ? fallback : composeMagicPrompt(template, values, randomUUID()),
+  );
+}
+
 /** What every tab of the panel needs from it. */
 export interface KnowledgeTabProps {
   readonly projectId: ProjectId;
@@ -117,4 +139,6 @@ export interface KnowledgeTabProps {
   readonly commands: KnowledgeCommands;
   /** A search is narrowing the list, so an empty list is "no matches", not "nothing yet". */
   readonly filtered: boolean;
+  /** The project's magic prompts. Empty on a server without them. */
+  readonly templates: ReadonlyArray<MagicPromptTemplate>;
 }

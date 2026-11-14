@@ -123,7 +123,9 @@ import * as ThreadLaunchService from "./orchestration-v2/ThreadLaunchService.ts"
 import * as ThreadMessageIntake from "./orchestration-v2/ThreadMessageIntake.ts";
 import * as DocumentText from "./provider/DocumentText.ts";
 import * as ScheduledTasks from "./scheduledTasks/ScheduledTaskService.ts";
+import * as ForkDatabase from "./fork/ForkDatabase.ts";
 import * as KnowledgeStore from "./knowledge/KnowledgeStore.ts";
+import * as MagicPromptStore from "./magicPrompts/MagicPromptStore.ts";
 import * as SecretRequests from "./secrets/SecretRequests.ts";
 import * as GuestShareService from "./guest/GuestShareService.ts";
 import {
@@ -1471,6 +1473,7 @@ export const layerWsRpc = (
       const providerSessionManager = yield* ProviderSessionManager.ProviderSessionManagerV2;
       const scheduledTasks = yield* ScheduledTasks.ScheduledTaskService;
       const knowledge = yield* KnowledgeStore.KnowledgeStore;
+      const magicPrompts = yield* MagicPromptStore.MagicPromptStore;
       const secretRequests = yield* SecretRequests.SecretRequests;
       const guestShares = yield* GuestShareService.GuestShareService;
       const pullRequests = yield* PullRequestService.PullRequestService;
@@ -2292,6 +2295,9 @@ export const layerWsRpc = (
         [WS_METHODS.knowledgeDelete]: (input) => knowledge.delete(input),
         [WS_METHODS.knowledgeReadPlan]: (input) => knowledge.readPlan(input),
         [WS_METHODS.knowledgeWritePlan]: (input) => knowledge.writePlan(input),
+        [WS_METHODS.magicPromptsList]: (input) => magicPrompts.list(input),
+        [WS_METHODS.magicPromptsSave]: (input) => magicPrompts.save(input),
+        [WS_METHODS.magicPromptsReset]: (input) => magicPrompts.reset(input),
         [WS_METHODS.scheduledTasksSetEnabled]: (input) =>
           Effect.annotateCurrentSpan({ "scheduled_task.id": input.id }).pipe(
             Effect.andThen(scheduledTasks.setEnabled(input)),
@@ -3554,6 +3560,7 @@ export const layer = Layer.unwrap(
     const peerLinkRequests = yield* PeerLinkRequests.PeerLinkRequests;
     const sql = yield* SqlClient.SqlClient;
     const knowledge = yield* KnowledgeStore.KnowledgeStore;
+    const magicPrompts = yield* MagicPromptStore.MagicPromptStore;
     return HttpRouter.add(
       "GET",
       "/ws",
@@ -3628,6 +3635,7 @@ export const layer = Layer.unwrap(
               Layer.provide(DefectReporter.layer),
               Layer.provide(Layer.succeed(SqlClient.SqlClient, sql)),
               Layer.provide(Layer.succeed(KnowledgeStore.KnowledgeStore, knowledge)),
+              Layer.provide(Layer.succeed(MagicPromptStore.MagicPromptStore, magicPrompts)),
               Layer.provide(AcpRegistrySessions.layer),
               Layer.provide(ProviderMaintenanceRunner.layer),
               Layer.provide(Layer.succeed(NpmRelease.NpmRelease, npmRelease)),
@@ -3696,4 +3704,9 @@ export const layer = Layer.unwrap(
       ),
     );
   }),
-).pipe(Layer.provide(NpmRelease.layer), Layer.provide(KnowledgeStore.layer));
+).pipe(
+  Layer.provide(NpmRelease.layer),
+  Layer.provide(KnowledgeStore.layer),
+  Layer.provide(MagicPromptStore.layer),
+  Layer.provide(ForkDatabase.layer),
+);

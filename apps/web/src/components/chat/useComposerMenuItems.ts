@@ -1,3 +1,5 @@
+import type { MagicPromptTemplate } from "@t3tools/contracts";
+import { magicPromptCommandItems } from "../magicPrompts/magicPromptCommands";
 import {
   legacyThreadPullRequestKey,
   threadPullRequestKeyOf,
@@ -82,6 +84,7 @@ export function useComposerMenuItems({
   workspaceSkillsScanning,
   questionAttachmentTarget,
   modelMentions,
+  magicPromptTemplates,
 }: {
   readonly composerTrigger: ComposerTrigger | null;
   readonly environmentId: EnvironmentId;
@@ -101,6 +104,8 @@ export function useComposerMenuItems({
   readonly showSkillsInSlashMenu: boolean;
   readonly workspaceSkillsScanning: boolean;
   readonly questionAttachmentTarget: DraftId | null;
+  /** Fork: templates offered as commands at the start of a message. */
+  readonly magicPromptTemplates: ReadonlyArray<MagicPromptTemplate>;
   readonly modelMentions: {
     readonly instanceEntries: ReadonlyArray<ProviderInstanceEntry>;
     readonly modelOptionsByInstance: ReadonlyMap<ProviderInstanceId, ReadonlyArray<ModelEsque>>;
@@ -309,7 +314,15 @@ export function useComposerMenuItems({
         [...builtInSlashCommandItems, ...visibleProviderSlashCommandItems, ...skillItems],
         composerTrigger.rangeStart === 0,
       );
-      return searchSlashCommandItems(slashCommandItems, query);
+      const magicPromptItems =
+        composerTrigger.rangeStart === 0
+          ? magicPromptCommandItems(magicPromptTemplates, query, [
+              ...builtInSlashCommandItems.map((item) => item.command),
+              ...visibleProviderSlashCommandItems.map((item) => item.command.name),
+              ...skillItems.map((item) => item.skill.name),
+            ])
+          : [];
+      return [...searchSlashCommandItems(slashCommandItems, query), ...magicPromptItems];
     }
     if (composerTrigger.kind === "skill") {
       return searchProviderSkills(selectedProviderSkills, composerTrigger.query).map((skill) => ({
