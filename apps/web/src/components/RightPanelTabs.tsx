@@ -329,6 +329,8 @@ function RightPanelEmptyState(props: {
   onAddDevice: () => void;
   /** Absent where side chats are not offered. */
   onAddSideChat?: (() => void) | undefined;
+  /** Absent where the environment has no notes, todos and plans (an upstream server). */
+  onAddKnowledge?: (() => void) | undefined;
   browserAvailable: boolean;
   terminalAvailable: boolean;
   diffAvailable: boolean;
@@ -409,6 +411,19 @@ function RightPanelEmptyState(props: {
             available: props.sideChatAvailable && !props.sideChatDisabledReason,
             disabledReason: props.sideChatDisabledReason ?? SURFACE_UNAVAILABLE_HINTS.sideChat,
             onClick: props.onAddSideChat,
+          },
+        ]
+      : []),
+    ...(props.onAddKnowledge
+      ? [
+          {
+            label: "Notes, todos and plans",
+            description: "Keep notes, todos and plans for this project.",
+            icon: NotebookPen,
+            shortcut: "K",
+            available: true,
+            disabledReason: "",
+            onClick: props.onAddKnowledge,
           },
         ]
       : []),
@@ -1568,6 +1583,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
             onAddPullRequests={props.onAddPullRequests}
             onAddDevice={props.onAddDevice}
             onAddSideChat={props.onAddSideChat}
+            onAddKnowledge={props.onAddKnowledge}
             browserAvailable={props.browserAvailable}
             terminalAvailable={props.terminalAvailable}
             diffAvailable={props.diffAvailable}
