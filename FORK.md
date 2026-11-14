@@ -87,6 +87,15 @@ closes. `scripts/fork/refresh-from-nightly.sh` closes the fork app, re-copies th
 chats (see Seed data) and reopens it. Run it from your own terminal: the copy skips a chat whose
 agent is working or has background tasks running.
 
+### Builds from GitHub
+
+`fork/main` is the fork's integration branch; `main` stays a copy of upstream. Each push to
+`fork/main` runs `.github/workflows/fork-desktop-build.yml` (also startable from the Actions
+tab), which builds the macOS arm64 app and replaces the `fork-latest` prerelease. To install it,
+quit T3 Code Plus and run `scripts/fork/install-from-ci.sh` (needs `gh`), then
+`scripts/fork/launch-desktop.sh`. The build is unsigned: after each install macOS may ask
+again for Keychain or folder access.
+
 `T3CODE_DESKTOP_PROFILE` is a fork addition (`apps/desktop/src/app/DesktopUserData.ts`): it names
 the profile folder under `~/Library/Application Support`. Without it the app uses `t3code-v2`, the
 official app's profile, and quits at once while that app is running. Do not run the CLI server on

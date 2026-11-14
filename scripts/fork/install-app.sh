@@ -5,7 +5,7 @@
 # and would use the official app's data.
 set -eu
 repo=$(cd "$(dirname "$0")/../.." && pwd)
-built="$repo/release/app/T3 Code (Beta).app"
+built="${T3CODE_FORK_BUILT_APP:-$repo/release/app/T3 Code (Beta).app}"
 installed="/Applications/T3 Code Plus.app"
 home="${T3CODE_FORK_HOME:-$HOME/.t3-fork}"
 plist="$installed/Contents/Info.plist"

@@ -1,0 +1,63 @@
+# Fork only: builds the macOS arm64 desktop app from fork/main and publishes it as the rolling
+# "fork-latest" release. scripts/fork/install-from-ci.sh installs it. See FORK.md.
+name: Fork desktop build
+
+on:
+  push:
+    branches: [fork/main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fork-desktop-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.repository != 'pingdotgg/t3code'
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      # Same as release-desktop.yml: actions/checkout trips on the vendored .repos gitlinks.
+      - name: Checkout
+        shell: bash
+        env:
+          GIT_TERMINAL_PROMPT: "0"
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          git fetch --no-tags --depth=1 origin "$GITHUB_SHA"
+          git sparse-checkout set --no-cone '/*' '!/.repos/'
+          git -c checkout.workers=0 checkout --detach FETCH_HEAD
+
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-ci-deps
+        with:
+          install-args: --filter=@t3tools/desktop... --filter=t3... --filter=@t3tools/scripts...
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: stable
+          targets: aarch64-apple-darwin
+
+      # Unsigned: the build signs ad hoc, and install-app.sh signs the installed copy again.
+      - name: Build desktop app
+        run: vp run dist:desktop:dmg:arm64
+
+      - name: Publish fork-latest release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          short_sha="${GITHUB_SHA::9}"
+          gh release delete fork-latest --yes --cleanup-tag || true
+          gh release create fork-latest release/*-arm64.dmg release/*-arm64.zip \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "Fork build ${short_sha}" \
+            --notes "macOS arm64 build of fork/main at ${short_sha}. Install with scripts/fork/install-from-ci.sh."
