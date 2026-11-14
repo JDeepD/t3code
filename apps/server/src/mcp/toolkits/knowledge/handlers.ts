@@ -54,7 +54,7 @@ const defined = <T extends Record<string, unknown>>(fields: T) =>
   };
 
 export const layer = McpToolAccess.toLayer(KnowledgeToolkit, {
-  t3_knowledge_list: McpToolAccess.reads(({ projectId }) =>
+  t3_todos_notes_list: McpToolAccess.reads(({ projectId }) =>
     Effect.gen(function* () {
       const scope = yield* target(projectId);
       const knowledge = yield* KnowledgeStore.KnowledgeStore;
@@ -69,7 +69,7 @@ export const layer = McpToolAccess.toLayer(KnowledgeToolkit, {
       };
     }),
   ),
-  t3_knowledge_save: McpToolAccess.writes((input) =>
+  t3_todos_notes_save: McpToolAccess.writes((input) =>
     Effect.gen(function* () {
       const scope = yield* target(input.projectId);
       const creating = input.id === undefined;
@@ -131,7 +131,7 @@ export const layer = McpToolAccess.toLayer(KnowledgeToolkit, {
       }
     }),
   ),
-  t3_knowledge_delete: McpToolAccess.writes(({ kind, id }) =>
+  t3_todos_notes_delete: McpToolAccess.writes(({ kind, id }) =>
     Effect.gen(function* () {
       const knowledge = yield* KnowledgeStore.KnowledgeStore;
       yield* knowledge

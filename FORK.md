@@ -155,8 +155,8 @@ Files:
   `AssistantSelectionToolbar.tsx`, `MessagesTimeline.tsx`, `timelineRowContext.ts`,
   `TimelineAssistantRows.tsx`
 
-Agents reach the panel through three T3 MCP tools: `t3_knowledge_list`, `t3_knowledge_save`
-(create or change a note, todo or plan) and `t3_knowledge_delete`. They default to the calling
+Agents reach the panel through three T3 MCP tools: `t3_todos_notes_list`, `t3_todos_notes_save`
+(create or change a note, todo or plan) and `t3_todos_notes_delete`. They default to the calling
 thread's project, and an item an agent creates links back to that thread. Ask in a chat, for
 example "add these as todos in my notes panel". Read-only MCP clients and linked environments
 can list but not change. Code: `apps/server/src/mcp/toolkits/knowledge/`. Hook-ins:

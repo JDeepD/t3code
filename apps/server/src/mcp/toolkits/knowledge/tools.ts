@@ -45,10 +45,10 @@ const Todo = Schema.Struct({
 });
 const Plan = Schema.Struct({ id: KnowledgePlanId, title: Schema.String, path: Schema.String });
 
-const KnowledgeListTool = Tool.make("t3_knowledge_list", {
+const KnowledgeListTool = Tool.make("t3_todos_notes_list", {
   ...shared,
   description:
-    "List the project's notes, todos and plans from the user's T3 Code notes panel. A plan is a markdown file at `path`; read and edit it with file tools.",
+    "List the todos, notes and plans in the user's T3 Code panel for this project. Not your own task list. A plan is a markdown file at `path`; edit it with file tools.",
   parameters: Schema.Struct({ projectId: projectIdParameter }),
   success: Schema.Struct({
     projectId: ProjectId,
@@ -60,10 +60,10 @@ const KnowledgeListTool = Tool.make("t3_knowledge_list", {
   .annotate(Tool.Readonly, true)
   .annotate(Tool.Destructive, false);
 
-const KnowledgeSaveTool = Tool.make("t3_knowledge_save", {
+const KnowledgeSaveTool = Tool.make("t3_todos_notes_save", {
   ...shared,
   description:
-    "Add or change an item in the user's T3 Code notes panel, only when the user asks for notes, todos or a plan there. No `id` creates; an `id` changes only the fields given. `completed` and `planId` are for todos, `pinned` for notes, `title` and `markdown` for a new plan.",
+    "Add, tick off or edit a todo, note or plan in the user's T3 Code panel when the user asks to put it in T3 Code. Not your own task list. No `id` creates; an `id` changes only the fields given. `completed` and `planId` are for todos, `pinned` for notes, `title` and `markdown` for a new plan.",
   parameters: Schema.Struct({
     kind: Kind,
     id: Schema.optionalKey(TrimmedNonEmptyString),
@@ -93,10 +93,10 @@ const KnowledgeSaveTool = Tool.make("t3_knowledge_save", {
   }),
 }).annotate(Tool.Destructive, false);
 
-const KnowledgeDeleteTool = Tool.make("t3_knowledge_delete", {
+const KnowledgeDeleteTool = Tool.make("t3_todos_notes_delete", {
   ...shared,
   description:
-    "Delete a note, todo or plan from the user's T3 Code notes panel, only when the user asks. Deleting a plan also deletes its file.",
+    "Delete a todo, note or plan from the user's T3 Code panel, only when the user asks. Deleting a plan also deletes its file.",
   parameters: Schema.Struct({ kind: Kind, id: TrimmedNonEmptyString }),
   success: Schema.Struct({ kind: Kind, id: Schema.String }),
 }).annotate(Tool.Destructive, true);

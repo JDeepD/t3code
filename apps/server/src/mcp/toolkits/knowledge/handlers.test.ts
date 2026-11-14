@@ -52,8 +52,8 @@ it.effect("saves todos to the caller's project, linked to its thread, and lists 
     yield* Effect.gen(function* () {
       const toolkit = yield* KnowledgeToolkit;
       const store = yield* KnowledgeStore.KnowledgeStore;
-      const save = (params: Parameters<typeof toolkit.handle<"t3_knowledge_save">>[1]) =>
-        toolkit.handle("t3_knowledge_save", params).pipe(
+      const save = (params: Parameters<typeof toolkit.handle<"t3_todos_notes_save">>[1]) =>
+        toolkit.handle("t3_todos_notes_save", params).pipe(
           Stream.unwrap,
           Stream.runCollect,
           Effect.map((parts) => parts.at(-1)?.result),
@@ -80,7 +80,7 @@ it.effect("saves todos to the caller's project, linked to its thread, and lists 
         yield* save({ kind: "note", body: "x", projectId: ProjectId.make("project:other") }),
       ).toMatchObject({ code: "invalid_request", message: "The project was not found." });
 
-      const listed = yield* toolkit.handle("t3_knowledge_list", {}).pipe(
+      const listed = yield* toolkit.handle("t3_todos_notes_list", {}).pipe(
         Stream.unwrap,
         Stream.runCollect,
         Effect.map((parts) => parts.at(-1)?.result),
