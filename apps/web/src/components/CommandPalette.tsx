@@ -57,6 +57,7 @@ import {
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeftIcon,
+  NotebookPenIcon,
   BugIcon,
   ChartNoAxesColumnIcon,
   CheckIcon,
@@ -1471,6 +1472,23 @@ function OpenCommandPaletteDialog(props: {
       icon: <PullRequestGlyph.link className={ITEM_ICON_CLASS} />,
       run: async () => {
         useRightPanelStore.getState().open(threadRef, "pull-requests");
+      },
+    });
+  }
+
+  if (
+    activeThread !== null &&
+    activeThreadServerConfig?.environment.capabilities.knowledge === true
+  ) {
+    const threadRef = scopeThreadRef(activeThread.environmentId, activeThread.id);
+    actionItems.push({
+      kind: "action",
+      value: "action:open-knowledge",
+      searchTerms: ["notes", "todos", "plans", "knowledge"],
+      title: "Show notes, todos and plans",
+      icon: <NotebookPenIcon className={ITEM_ICON_CLASS} />,
+      run: async () => {
+        useRightPanelStore.getState().open(threadRef, "knowledge");
       },
     });
   }

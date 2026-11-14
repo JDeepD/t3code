@@ -231,6 +231,7 @@ interface MessagesTimelineProps {
     sourceAnchor: AssistantCitationSourceAnchor,
   ) => boolean;
   onAskByTheWay?: ((quote: string) => void) | undefined;
+  onAddToNotes?: TimelineRowSharedState["onAddToNotes"];
   onReplyToResponse?: TimelineRowSharedState["onReplyToResponse"];
   isWorking: boolean;
   runlessWorkActive?: boolean;
@@ -351,6 +352,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
   citationHistory = CITED_HISTORY_LOADING,
   onCiteAssistantText,
   onAskByTheWay,
+  onAddToNotes,
   onReplyToResponse,
   isWorking,
   runlessWorkActive = false,
@@ -1104,6 +1106,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
     onRespondToApproval,
     citationRequest: readyCitationRequest,
     onReplyToResponse,
+    onAddToNotes,
     listRef,
     timestampFormat,
     routeThreadKey,
@@ -1431,6 +1434,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
                 threadRef={citationThreadRef}
                 onCite={onCiteAssistantText}
                 onAskByTheWay={onAskByTheWay}
+                onAddToNotes={onAddToNotes}
               />
             ) : null}
             <LegendList<MessagesTimelineRow>

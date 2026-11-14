@@ -385,6 +385,17 @@ import {
   ScheduledTaskUpsertInput,
   ScheduledTaskMutationResult,
 } from "./scheduledTask.ts";
+import {
+  KnowledgeDeleteInput,
+  KnowledgeError,
+  KnowledgePlanDocument,
+  KnowledgeReadPlanInput,
+  KnowledgeSaveInput,
+  KnowledgeSaveResult,
+  KnowledgeSnapshot,
+  KnowledgeSubscribeInput,
+  KnowledgeWritePlanInput,
+} from "./knowledge.ts";
 import { SecretRequestAnswerInput, SecretRequestError } from "./secretRequest.ts";
 import {
   ProjectCloneActionInput,
@@ -561,6 +572,12 @@ export const WS_METHODS = {
   guestShareCreate: "guestShare.create",
   scheduledTasksListWebhookDeliveries: "scheduledTasks.listWebhookDeliveries",
   scheduledTasksGetWebhookDelivery: "scheduledTasks.getWebhookDelivery",
+
+  knowledgeSubscribe: "knowledge.subscribe",
+  knowledgeSave: "knowledge.save",
+  knowledgeDelete: "knowledge.delete",
+  knowledgeReadPlan: "knowledge.readPlan",
+  knowledgeWritePlan: "knowledge.writePlan",
 
   cloudGetRelayClientStatus: "cloud.getRelayClientStatus",
   cloudInstallRelayClient: "cloud.installRelayClient",
@@ -2083,6 +2100,39 @@ const WsScheduledTasksGetWebhookDeliveryRpc = Rpc.make(
   },
 );
 
+const KnowledgeRpcError = Schema.Union([KnowledgeError, EnvironmentAuthorizationError]);
+
+const WsKnowledgeSubscribeRpc = Rpc.make(WS_METHODS.knowledgeSubscribe, {
+  payload: KnowledgeSubscribeInput,
+  success: KnowledgeSnapshot,
+  error: KnowledgeRpcError,
+  stream: true,
+});
+
+const WsKnowledgeSaveRpc = Rpc.make(WS_METHODS.knowledgeSave, {
+  payload: KnowledgeSaveInput,
+  success: KnowledgeSaveResult,
+  error: KnowledgeRpcError,
+});
+
+const WsKnowledgeDeleteRpc = Rpc.make(WS_METHODS.knowledgeDelete, {
+  payload: KnowledgeDeleteInput,
+  success: Schema.Void,
+  error: KnowledgeRpcError,
+});
+
+const WsKnowledgeReadPlanRpc = Rpc.make(WS_METHODS.knowledgeReadPlan, {
+  payload: KnowledgeReadPlanInput,
+  success: KnowledgePlanDocument,
+  error: KnowledgeRpcError,
+});
+
+const WsKnowledgeWritePlanRpc = Rpc.make(WS_METHODS.knowledgeWritePlan, {
+  payload: KnowledgeWritePlanInput,
+  success: KnowledgePlanDocument,
+  error: KnowledgeRpcError,
+});
+
 const WsSubscribeAuthAccessRpc = Rpc.make(WS_METHODS.subscribeAuthAccess, {
   payload: Schema.Struct({}),
   success: AuthAccessStreamEvent,
@@ -2172,6 +2222,11 @@ export const WsRpcGroup = RpcGroup.make(
   WsSecretsAnswerRequestRpc,
   WsScheduledTasksListWebhookDeliveriesRpc,
   WsScheduledTasksGetWebhookDeliveryRpc,
+  WsKnowledgeSubscribeRpc,
+  WsKnowledgeSaveRpc,
+  WsKnowledgeDeleteRpc,
+  WsKnowledgeReadPlanRpc,
+  WsKnowledgeWritePlanRpc,
   WsServerReportClientActivityRpc,
   WsCloudGetRelayClientStatusRpc,
   WsCloudInstallRelayClientRpc,

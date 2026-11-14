@@ -300,6 +300,7 @@ import { ChatHeader } from "./chat/ChatHeader";
 import { useSideChat } from "./chat/useSideChat";
 import { BtwOverlay } from "./chat/btw/BtwOverlay";
 import { startBtw } from "./chat/btw/btwStore";
+import { useAddToNotes } from "./knowledge/knowledgeActions";
 import { useRemoteOpenState } from "~/remoteOpen";
 import { shouldShowOpenInPicker } from "./chat/OpenInPicker.logic";
 import { useOpenFavoriteEditorShortcut } from "./chat/OpenInPickerShortcut";
@@ -2860,6 +2861,17 @@ export default function ChatView(props: ChatViewProps) {
   const startBtwStable = useStableCallback((quote: string) => {
     if (btwParentRef) void startBtw(btwParentRef, quote);
   });
+  // Fork: notes, todos and plans. Hidden on servers without the capability (upstream).
+  const knowledgeOffered =
+    !embedded && serverConfig?.environment.capabilities.knowledge === true && isServerThread;
+  const addToNotes = useAddToNotes(
+    knowledgeOffered && canOperateThread ? activeThreadRef : null,
+    activeProject?.id ?? null,
+  );
+  const addToNotesStable = useStableCallback(addToNotes);
+  const openKnowledgeStable = useStableCallback(() => {
+    if (activeThreadRef) useRightPanelStore.getState().open(activeThreadRef, "knowledge");
+  });
   const { onConfirmRevertStable, onForkFromRunStable, onRevertTimelineTurnStable } =
     useTimelineRewind({
       environmentId,
@@ -3451,6 +3463,11 @@ export default function ChatView(props: ChatViewProps) {
                   citationHistory={citationHistory}
                   onCiteAssistantText={citeAssistantTextStable}
                   onAskByTheWay={btwParentRef ? startBtwStable : undefined}
+                  onAddToNotes={
+                    knowledgeOffered && canOperateThread && activeProject
+                      ? addToNotesStable
+                      : undefined
+                  }
                   onReplyToResponse={replyToResponseStable}
                   {...(activeProject
                     ? { onRunShellCommand: parentPanel?.runShellCommand ?? runShellCommandStable }
@@ -4051,6 +4068,7 @@ export default function ChatView(props: ChatViewProps) {
           onAddPullRequests={addPullRequestsSurfaceStable}
           onAddDevice={addDeviceSurfaceStable}
           onAddSideChat={sideChatsOffered ? openSideChatStable : undefined}
+          onAddKnowledge={knowledgeOffered ? openKnowledgeStable : undefined}
           browserAvailable={canOperatePreview && browserAvailable}
           terminalAvailable={activeProject !== null && canOperateTerminal}
           diffAvailable={isServerThread && isGitRepo}

@@ -82,3 +82,41 @@ overlay keeps the side chat. Offered wherever side chats are (the server's `side
 - Hook-ins: `AssistantSelectionToolbar.tsx` (Cite | By the way… group), `MessagesTimeline.tsx`
   (passes `onAskByTheWay`), `ChatView.tsx` (offers it and mounts the overlay), `useSideChat.ts`
   (`openInBackground` starts a side chat without opening its tab)
+
+### Notes, todos and plans (web and desktop)
+
+A per-project panel in the thread's right panel (the **+** menu → **Notes, todos and plans**, or
+the command palette). **Add to notes** on a text selection or under a reply saves it as a note that
+links back to the chat. Todos can be reordered and grouped by plan. A plan is a markdown file that
+agents can read and edit with their normal file tools; an edit on disk shows up in the panel, and
+the panel will not overwrite a newer copy without asking. **Plan this**, **Improve plan** and
+**Implement plan** put a prompt in the composer (Phase 3 turns these into magic prompts).
+
+The server advertises the `knowledge` capability. The UI is hidden on a server without it, such as
+upstream, and the mobile apps ignore it.
+
+Data lives in the T3 home's state folder (`~/.t3-fork/userdata/fork/`). Back up that folder:
+
+- `knowledge.sqlite`: notes, todos and plan metadata, with its own `fork_schema_version` table. To
+  change the schema, append an entry to `SCHEMA_MIGRATIONS`; never edit a shipped one.
+- `plans/<projectId>/<slug>.md`: the plan files.
+
+Files:
+
+- `packages/contracts/src/knowledge.ts`: schemas and errors. Hook-ins: `rpc.ts` (five
+  `knowledge.*` methods), `environment.ts` (capability), `clientRpcPermissions.ts` (write scopes)
+- `apps/server/src/knowledge/KnowledgeStore.ts`: the service and its tests. Hook-ins: `ws.ts`
+  (handlers and layer), `RpcAuthorization.ts`, `RpcInstrumentation.ts`, `ServerEnvironment.ts`
+- `packages/client-runtime/src/state/knowledge.ts` and `apps/web/src/state/knowledge.ts`: atoms.
+  Hook-in: `rpc/client.ts` (stream tag)
+- `apps/web/src/components/knowledge/`: the panel, its tabs, actions and logic tests. Hook-ins:
+  `rightPanelStore.ts` and `closedViewStore.ts` (the `knowledge` panel kind), `RightPanelTabs.tsx`,
+  `RightPanelSurfaceContent.tsx`, `CommandPalette.tsx`, `ChatView.tsx`,
+  `AssistantSelectionToolbar.tsx`, `MessagesTimeline.tsx`, `timelineRowContext.ts`,
+  `TimelineAssistantRows.tsx`
+
+Not built: agent tools for listing and adding notes and todos. They would need a toolkit under
+`apps/server/src/mcp/toolkits/`, registration and access modes in `McpHttpServer.ts` and
+`McpToolExposure.ts`, a setting to turn them on, and eval cases for the tool descriptions
+(`evals/README.md`). `KnowledgeStore.list` and `save` are the service methods they would call.
+Todo dependencies (`dependsOn`) are stored and validated but have no UI yet.

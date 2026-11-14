@@ -5,7 +5,7 @@ import { agentWorkingDirectories } from "@t3tools/client-runtime/workspace-basen
 import { memo, use, useState } from "react";
 import { type ChatMessage, type TurnDiffSummary } from "../../types";
 import ChatMarkdown from "../ChatMarkdown";
-import { GitForkIcon, ReplyIcon } from "lucide-react";
+import { GitForkIcon, NotebookPenIcon, ReplyIcon } from "lucide-react";
 import { captureAssistantMessageOpening } from "~/lib/assistantTextSelection";
 import { responseContextRecord } from "~/lib/composerContextRecords";
 import { Button } from "../ui/button";
@@ -236,6 +236,7 @@ function AssistantMessageMeta({
       {!message.streaming && projectedItem ? (
         <AssistantReplyButton message={message} itemId={projectedItem.sourceItemId} />
       ) : null}
+      {!message.streaming ? <AssistantAddToNotesButton message={message} /> : null}
       {!message.streaming && (
         <Tooltip>
           <TooltipTrigger render={<p className="text-muted-foreground text-xs tabular-nums" />}>
@@ -292,6 +293,48 @@ function AssistantReplyButton({ message, itemId }: { message: ChatMessage; itemI
         <ReplyIcon className="size-3" />
       </TooltipTrigger>
       <TooltipPopup side="top">Reply to this response</TooltipPopup>
+    </Tooltip>
+  );
+}
+
+function AssistantAddToNotesButton({ message }: { message: ChatMessage }) {
+  const { threadRef, onAddToNotes } = use(TimelineRowCtx);
+  if (!threadRef || !onAddToNotes || !message.text.trim()) return null;
+
+  const addToNotes = () => {
+    // The opening of the message is enough for the note's link to scroll back here.
+    const source = [
+      ...document.querySelectorAll<HTMLElement>("[data-assistant-citation-source]"),
+    ].find(
+      (element) =>
+        element.dataset.assistantCitationSource === message.id &&
+        element.dataset.assistantCitationThread === threadRef.threadId &&
+        element.dataset.assistantCitationEnvironment === threadRef.environmentId,
+    );
+    const opening = captureAssistantMessageOpening(source ?? null, message.text);
+    onAddToNotes({
+      text: message.text,
+      messageId: message.id,
+      citation: opening ? { version: 1, ...threadRef, messageId: message.id, ...opening } : null,
+    });
+  };
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            type="button"
+            size="xs"
+            variant="ghost-muted"
+            onClick={addToNotes}
+            aria-label="Add this response to notes"
+          />
+        }
+      >
+        <NotebookPenIcon className="size-3" />
+      </TooltipTrigger>
+      <TooltipPopup side="top">Add to notes</TooltipPopup>
     </Tooltip>
   );
 }

@@ -26,6 +26,7 @@ import type { PendingApproval } from "../../session-logic";
 import { type ChatFileAttachment } from "../../types";
 import { type ExpandedImageItem, ExpandedImagePreview } from "./ExpandedImagePreview";
 import { type AssistantCitationTarget } from "./AssistantCitationSource";
+import type { NoteFromChat } from "../knowledge/knowledge.logic";
 import { type MessagesTimelineRow, type WorkGroupScrollAnchor } from "./MessagesTimeline.logic";
 import { type TimestampFormat } from "@t3tools/contracts/settings";
 import type { TurnItemDetailSource } from "../../state/queries";
@@ -53,6 +54,8 @@ export interface TimelineRowSharedState {
   citationRequest: AssistantCitationTarget | null;
   /** Absent hides "Reply", as in the guest view. */
   onReplyToResponse: ((response: ResponseContextRecord) => boolean) | undefined;
+  /** Absent hides "Add to notes", as on an upstream server. */
+  onAddToNotes: ((note: NoteFromChat) => void) | undefined;
   listRef: React.RefObject<LegendListRef | null>;
   timestampFormat: TimestampFormat;
   routeThreadKey: string;

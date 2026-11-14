@@ -4,7 +4,7 @@ import {
   type AssistantCitation,
   type ScopedThreadRef,
 } from "@t3tools/contracts";
-import { MessageCircleQuestionIcon, QuoteIcon } from "lucide-react";
+import { MessageCircleQuestionIcon, NotebookPenIcon, QuoteIcon } from "lucide-react";
 import { use, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -17,6 +17,7 @@ import {
   resolveSelectionActionPosition,
   type SelectionActionPoint,
 } from "~/lib/selectionActions";
+import type { NoteFromChat } from "../knowledge/knowledge.logic";
 import { Button } from "../ui/button";
 import { Group, GroupSeparator } from "../ui/group";
 import { BackgroundThreadContext } from "./backgroundThread";
@@ -26,11 +27,13 @@ export function AssistantSelectionToolbar({
   threadRef,
   onCite,
   onAskByTheWay,
+  onAddToNotes,
 }: {
   viewport: HTMLElement | null;
   threadRef: ScopedThreadRef;
   onCite: (citation: AssistantCitation, sourceAnchor: AssistantCitationSourceAnchor) => boolean;
   onAskByTheWay?: ((quote: string) => void) | undefined;
+  onAddToNotes?: ((note: NoteFromChat) => void) | undefined;
 }) {
   const [selection, setSelection] = useState<{
     citation: AssistantCitation;
@@ -198,6 +201,13 @@ export function AssistantSelectionToolbar({
     window.getSelection()?.removeAllRanges();
     dismiss();
   };
+  const addToNotes = () => {
+    if (tooLong || !onAddToNotes) return;
+    const { citation } = selection;
+    onAddToNotes({ text: citation.text, messageId: citation.messageId, citation });
+    window.getSelection()?.removeAllRanges();
+    dismiss();
+  };
   return createPortal(
     <Group
       ref={toolbarRef}
@@ -236,6 +246,21 @@ export function AssistantSelectionToolbar({
           >
             <MessageCircleQuestionIcon aria-hidden="true" className="size-3.5" />
             By the way…
+          </Button>
+        </>
+      ) : null}
+      {onAddToNotes && !tooLong ? (
+        <>
+          <GroupSeparator />
+          <Button
+            type="button"
+            size="xs"
+            variant="glass"
+            aria-label="Save the selection as a note"
+            onClick={addToNotes}
+          >
+            <NotebookPenIcon aria-hidden="true" className="size-3.5" />
+            Add to notes
           </Button>
         </>
       ) : null}

@@ -44,6 +44,7 @@ import {
   Files,
   Globe2,
   MessagesSquare,
+  NotebookPen,
   Plus,
   TerminalSquare,
   Volume2Icon,
@@ -145,6 +146,8 @@ export interface RightPanelTabsProps {
   onAddDevice: () => void;
   /** Absent where side chats are not offered. */
   onAddSideChat?: (() => void) | undefined;
+  /** Absent where the environment has no notes, todos and plans (an upstream server). */
+  onAddKnowledge?: (() => void) | undefined;
   browserAvailable: boolean;
   terminalAvailable: boolean;
   diffAvailable: boolean;
@@ -596,6 +599,8 @@ function surfaceTitle(
       return surface.title ?? surface.target?.name ?? "Device";
     case "side-chat":
       return "Side chat";
+    case "knowledge":
+      return "Notes";
     case "preview": {
       const snapshot = surface.resourceId ? sessions[surface.resourceId] : null;
       if (!snapshot || snapshot.navStatus._tag === "Idle") return "Browser";
@@ -686,6 +691,8 @@ function SurfaceIcon({
       return <PullRequestGlyph.link className="size-3 shrink-0" />;
     case "side-chat":
       return <SideChatTabIcon environmentId={environmentId} threadId={surface.threadId} />;
+    case "knowledge":
+      return <NotebookPen className="size-3 shrink-0" />;
     case "device":
       return surface.target?.platform === "ios" ? (
         <AppleIcon className="size-3 shrink-0" />
@@ -1163,6 +1170,18 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
             available: props.sideChatAvailable === true && !props.sideChatDisabledReason,
             disabledReason: props.sideChatDisabledReason ?? SURFACE_DISABLED_REASONS.sideChat,
             onClick: props.onAddSideChat,
+          },
+        ]
+      : []),
+    ...(props.onAddKnowledge
+      ? [
+          {
+            label: "Notes, todos and plans",
+            icon: NotebookPen,
+            shortcut: "K",
+            available: true,
+            disabledReason: "",
+            onClick: props.onAddKnowledge,
           },
         ]
       : []),
