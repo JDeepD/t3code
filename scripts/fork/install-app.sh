@@ -21,8 +21,8 @@ fi
 
 rm -rf "$installed" "/Applications/T3 Code Fork.app"
 ditto "$built" "$installed"
-/usr/libexec/PlistBuddy -c "Set :CFBundleName T3 Code Plus" \
-  -c "Set :CFBundleDisplayName T3 Code Plus" "$plist"
+# Leave CFBundleName alone: Electron finds "<CFBundleName> Helper.app" by it and aborts otherwise.
+/usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName T3 Code Plus" "$plist"
 set_env() {
   /usr/libexec/PlistBuddy -c "Delete :LSEnvironment:$1" "$plist" 2>/dev/null || true
   /usr/libexec/PlistBuddy -c "Add :LSEnvironment:$1 string $2" "$plist"
@@ -31,4 +31,8 @@ set_env T3CODE_HOME "$home"
 set_env T3CODE_DESKTOP_PROFILE t3code-fork
 set_env T3CODE_PORT 3873
 set_env T3CODE_DISABLE_AUTO_UPDATE 1
+# Editing Info.plist breaks the build's ad-hoc signature, and macOS then shows a "can't open" icon.
+codesign --force --deep --sign - "$installed"
+lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+"$lsregister" -f "$installed"
 echo "Installed $installed (data in $home)."
