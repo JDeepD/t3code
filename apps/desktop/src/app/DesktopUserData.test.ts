@@ -42,6 +42,17 @@ it.effect.each(["t3code", "T3 Code (Alpha)"])(
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
 );
 
+it.effect("uses a named profile folder beside the default one", () =>
+  Effect.gen(function* () {
+    const input = { appDataDirectory: "/data", isDevelopment: false, platform: "darwin" } as const;
+    assert.equal(yield* resolveUserDataPath(input), "/data/t3code-v2");
+    assert.equal(
+      yield* resolveUserDataPath({ ...input, profileName: "../t3code-fork" }),
+      "/data/t3code-fork",
+    );
+  }).pipe(Effect.provide(NodeServices.layer)),
+);
+
 const gpuCacheDirectories = [
   "GPUCache",
   "GrShaderCache",

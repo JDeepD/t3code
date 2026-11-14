@@ -44,6 +44,8 @@ export class DesktopEnvironment extends Context.Service<
     readonly resourcesPath: string;
     readonly homeDirectory: string;
     readonly appDataDirectory: string;
+    /** Fork: a profile folder of its own lets this app run beside another T3 Code app. */
+    readonly profileName?: string | undefined;
     readonly baseDir: string;
     readonly stateDir: string;
     readonly desktopSettingsPath: string;
@@ -196,6 +198,7 @@ const make = Effect.fn("desktop.environment.make")(function* (
     resourcesPath,
     homeDirectory,
     appDataDirectory,
+    profileName: Option.getOrUndefined(config.profileName),
     baseDir,
     stateDir,
     desktopSettingsPath: path.join(stateDir, "desktop-settings.json"),

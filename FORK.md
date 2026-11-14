@@ -58,6 +58,40 @@ node apps/server/scripts/migrate-dev-db.ts --base-dir ~/.t3-fork
 tailscale serve --https=8443 --set-path=/ off
 ```
 
+## Desktop app
+
+Needs a Rust toolchain (`rustup toolchain install stable`) besides the build requirements above.
+
+```sh
+vp run dist:desktop:dmg:arm64        # writes an unsigned .dmg and .zip to release/
+ditto -x -k release/T3-Code-*-arm64.zip release/app
+```
+
+The official app and this one share a bundle id and, by default, a profile folder and `~/.t3`.
+Launch the fork's app with its own home, profile and port so both can run at once, and with
+updates off so it is not replaced by an upstream release:
+
+```sh
+T3CODE_HOME=~/.t3-fork T3CODE_DESKTOP_PROFILE=t3code-fork T3CODE_PORT=3873 \
+  T3CODE_DISABLE_AUTO_UPDATE=1 \
+  "release/app/T3 Code (Beta).app/Contents/MacOS/T3 Code (Beta)"
+```
+
+`scripts/fork/install-app.sh` copies the built app to `/Applications/T3 Code Plus.app` and writes
+those four settings into its `Info.plist` (`LSEnvironment`), so it opens by double-click. Run it
+after each desktop build, with the fork app closed. Never double-click the copy in `release/`: it
+has no settings and would open the official app's data.
+
+`scripts/fork/launch-desktop.sh` runs that for you and leaves the app open after the terminal
+closes. `scripts/fork/refresh-from-nightly.sh` closes the fork app, re-copies the official app's
+chats (see Seed data) and reopens it. Run it from your own terminal: the copy skips a chat whose
+agent is working or has background tasks running.
+
+`T3CODE_DESKTOP_PROFILE` is a fork addition (`apps/desktop/src/app/DesktopUserData.ts`): it names
+the profile folder under `~/Library/Application Support`. Without it the app uses `t3code-v2`, the
+official app's profile, and quits at once while that app is running. Do not run the CLI server on
+`~/.t3-fork` at the same time as the desktop app.
+
 ## Merge upstream
 
 ```sh
